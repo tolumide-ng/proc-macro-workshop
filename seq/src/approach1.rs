@@ -26,9 +26,18 @@ impl syn::parse::Parse for SeqMacroInput {
         let _in = <syn::Token![in]>::parse(input)?;
         let from_litint = syn::LitInt::parse(input)?;
         let from = from_litint.base10_parse::<usize>()?;
-        let _dots = <syn::Token![..]>::parse(input)?;
+        // let inclusive = <Option<syn::Token![..=]>>::parse(input)?.is_some();
+        // let dots_only = <Option<syn::Token![..]>>::parse(input)?;
+        let inclusive = input.parse::<Option<syn::Token![..=]>>()?.is_some();
+        if !inclusive {
+            <syn::Token![..]>::parse(input)?;
+        }
         let to_litint = syn::LitInt::parse(input)?;
-        let to = to_litint.base10_parse::<usize>()?;
+        let mut to = to_litint.base10_parse::<usize>()?;
+
+        if inclusive {
+            to += 1;
+        }
 
         
         let content;

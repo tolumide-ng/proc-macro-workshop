@@ -27,7 +27,7 @@ use seq::seq;
 // Source of truth. Call a given macro passing nproc as argument.
 //
 // We want this number to appear in only one place so that updating this one
-// number will correctly affect anything that depends on the number of procs.
+// number will correctly aff ect anything that depends on the number of procs.
 macro_rules! pass_nproc {
     ($mac:ident) => {
         $mac! { 256 }
