@@ -20,8 +20,8 @@ impl Conference {
 
         #[sorted]
         match self {
-            RustFest => "Europe",
             RustLatam => "Latin America",
+            RustFest => "Europe",
             _ => "elsewhere",
         }
     }

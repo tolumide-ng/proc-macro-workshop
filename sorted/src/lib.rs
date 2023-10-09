@@ -52,21 +52,61 @@ impl syn::visit_mut::VisitMut for LexiographicMatching {
         if m.attrs.iter().any(|x| x.path().is_ident("sorted")) {
             m.attrs.retain(|a| !a.meta.path().is_ident("sorted"));
 
-            let paths = m.arms.iter().filter_map(|a| get_arm_path(&a.pat)).collect::<Vec<_>>();
-            let mut sorted_paths = paths.clone();
-            sorted_paths.sort_by(|a, b| a.1.cmp(&b.1));
-            // sorted_paths.sort_by(|a, b| a.get_ident().unwrap().cmp(&b.get_ident().unwrap()));
+            // let paths = m.arms.iter().map(|a| get_arm_path(&a.pat)).collect::<Vec<_>>();
+            let mut paths =  Vec::new();
             
-            for ((original, o_name), (sorted, s_name)) in paths.iter().zip(sorted_paths) {
-                if original != &sorted {
+            
+            
+            for arm in m.arms.iter() {
+                println!("::::::::::::::::::::::::::::::::::::::::::::::::::::::::");
+                // let abc = &arm.pat;
+
+                // if let syn::Pat::Ident(ref i) = arm.pat {
+                //     // paths.push(value)
+                // }
+
+                if let syn::Pat::Ident(ref value) = &arm.pat {
+                    let name = value.ident.to_string();
+                    let path = value;
+                }
+
+
+                let (path, name) = match get_arm_path(&arm.pat) {
+                    Ok(v) => {
+                        v
+                    }
+                    Err(e) => {self.errors.push(e); return}
+                };
+
+                if paths.last().map(|last| &name < last).unwrap_or(false) {
+                    let next_lex = paths.binary_search(&name).unwrap_err();
+
                     let msg = syn::Error::new_spanned(
-                        sorted, format!("{} should sort before {}", s_name, o_name)
+                        path, format!("{} should sort before {}", name, paths[next_lex])
                     );
                     self.errors.push(msg);
                     return
                 }
 
+                paths.push(name)
             }
+
+
+            
+            let mut sorted_paths = paths.clone();
+            sorted_paths.sort_by(|a, b| a.1.cmp(&b.1));
+            // sorted_paths.sort_by(|a, b| a.get_ident().unwrap().cmp(&b.get_ident().unwrap()));
+            
+            // for ((original, o_name), (sorted, s_name)) in paths.iter().zip(sorted_paths) {
+            //     if original != &sorted {
+            //         let msg = syn::Error::new_spanned(
+            //             sorted, format!("{} should sort before {}", s_name, o_name)
+            //         );
+            //         self.errors.push(msg);
+            //         return
+            //     }
+
+            // }
         }
 
 
@@ -74,12 +114,25 @@ impl syn::visit_mut::VisitMut for LexiographicMatching {
     }
 }
 
-fn get_arm_path(arm: &syn::Pat) -> Option<(&syn::Path, String)> {
+fn get_arm_path(arm: &syn::Pat) -> syn::Result<(&syn::Path, String)> {
     match arm {
-        syn::Pat::TupleStruct(ref t) => {Some((&t.path, get_arm_name(&t.path)))},
-        syn::Pat::Path(ref p) => Some((&p.path, get_arm_name(&p.path))),
-        syn::Pat::Struct(ref s) => Some((&s.path, get_arm_name(&s.path))),
-        _ => None,
+        syn::Pat::TupleStruct(ref t) => {Ok((&t.path, get_arm_name(&t.path)))},
+        syn::Pat::Path(ref p) => Ok((&p.path, get_arm_name(&p.path))),
+        syn::Pat::Struct(ref s) => Ok((&s.path, get_arm_name(&s.path))),
+        // syn::Pat::Ident(syn::PatIdent {ident: ref id, ..}) => Ok(id.clone().into(), "".to_string()),
+        syn::Pat::Ident(ref id) => {
+            // let iddc = id.clone().into();
+            // Ok((iddc, get_arm_name(&id.path)));
+            // Ok((&id.into(), get_arm_name(&s.path)));
+
+            println!("identity >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> {:#?}", id);
+
+            Err(syn::Error::new_spanned(id, "unsupportedsssssss>>>>>>>>>by #[sorted]"))
+            
+        },
+        tokens => {
+            Err(syn::Error::new_spanned(tokens, "unsupported by #[sorted]"))
+        },
     }
 }
 
